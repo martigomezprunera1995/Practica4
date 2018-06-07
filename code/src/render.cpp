@@ -38,11 +38,18 @@ struct Lizard {
 //Global structs
 Lizard lizard;
 Cow cow;
+Lizard lizardInst;
+Cow cowInst;
 
-//Objs
+//Objs NO INST
 std::vector< glm::vec3 > vertices;
 std::vector< glm::vec2 > uvs;
 std::vector< glm::vec3 > normals;
+
+//Objs INST
+std::vector< glm::vec3 > vertices1;
+std::vector< glm::vec2 > uvs1;
+std::vector< glm::vec3 > normals1;
 
 glm::vec3 lightPos;
 
@@ -127,6 +134,12 @@ namespace MyLoadedModel {
 	void updateModel(const glm::mat4& transform, ObjType TypeObj);
 	void drawModel(double currentTime, ObjType TypeObj);
 }
+namespace MyLoadedModelInst {
+	void setupModelInst(ObjType TypeObj);
+	void cleanupModelInst(ObjType TypeObj);
+	void updateModelInst(const glm::mat4& transform, ObjType TypeObj);
+	void drawModelInst(double currentTime, ObjType TypeObj);
+}
 namespace Cube {
 	void setupCube();
 	void cleanupCube();
@@ -201,30 +214,39 @@ void GLinit(int width, int height) {
 
 	RV::_projection = glm::perspective(RV::FOV, (float)width/(float)height, RV::zNear, RV::zFar);
 
-	// Setup shaders & geometry
-	/*Box::setupCube();
-	Axis::setupAxis();*/
-
 	//CUBE
 	Cube::setupCube();
 
 	//OBJECTS
+	//NO INST
 	bool res = loadOBJ("wolf.obj", vertices, uvs, normals);
 	MyLoadedModel::setupModel(ObjType::LIZARD);
-	for (int i = 0; i < vertices.size(); i++)
-	{
+	for (int i = 0; i < vertices.size(); ++i) {
 		vertices.at(i) /= 10;
 	}
-
 	reset(vertices, uvs, normals);
 
 	res = loadOBJ("cow.obj", vertices, uvs, normals);
 	MyLoadedModel::setupModel(ObjType::COW);
-	for (int i = 0; i < vertices.size(); i++)
-	{
+	for (int i = 0; i < vertices.size(); ++i) {
 		vertices.at(i) /= 10;
 	}
 	reset(vertices, uvs, normals);
+
+	//INST
+	bool res1 = loadOBJ("wolf.obj", vertices1, uvs1, normals1);
+	MyLoadedModelInst::setupModelInst(ObjType::LIZARD);
+	for (int i = 0; i < vertices1.size(); ++i) {
+		vertices1.at(i) /= 10;
+	}
+	reset(vertices1, uvs1, normals1);
+
+	res1 = loadOBJ("cow.obj", vertices1, uvs1, normals1);
+	MyLoadedModelInst::setupModelInst(ObjType::COW);
+	for (int i = 0; i < vertices1.size(); ++i) {
+		vertices1.at(i) /= 10;
+	}
+	reset(vertices1, uvs1, normals1);
 
 	//SOL
 	lightPos = glm::vec3(10, 10, 0);
@@ -237,6 +259,8 @@ void GLcleanup() {
 	Axis::cleanupAxis();*/
 	MyLoadedModel::cleanupModel(ObjType::LIZARD);
 	MyLoadedModel::cleanupModel(ObjType::COW);
+	MyLoadedModelInst::cleanupModelInst(ObjType::LIZARD);
+	MyLoadedModelInst::cleanupModelInst(ObjType::COW);
 	Cube::cleanupCube();
 	//Sphere::cleanupSphere();
 
@@ -253,44 +277,58 @@ void GLrender(double currentTime, int counter) {
 	RV::_MVP = RV::_projection * RV::_modelView;
 
 	// render code
-	/*Box::drawCube();
-	Axis::drawAxis();*/
-
 	float countX = 0;
-	//FILAS
-	for (int i = 0; i < 100; i++)
+	if (selection == 0)
+	{
+		//FILAS
+		for (int i = 0; i < 100; i++)
+		{
+			//MOVEMOS HACIA UN LADO
+			cow.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(countX, 0.0f, 10.f));
+			lizard.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(countX, 0.0f, 10.f));
+
+			//COLUMMAS
+			for (int j = 0; j < 100; j++)
+			{
+				if (j % 2 == 0 && i % 2 == 0)
+				{
+					MyLoadedModel::drawModel(currentTime, ObjType::COW);
+
+				}
+				else if (i % 2 != 0 && j % 2 == 0)
+				{
+					MyLoadedModel::drawModel(currentTime, ObjType::LIZARD);
+
+				}
+				else if (i % 2 != 0 && j % 2 != 0)
+				{
+					MyLoadedModel::drawModel(currentTime, ObjType::COW);
+				}
+				else
+				{
+					MyLoadedModel::drawModel(currentTime, ObjType::LIZARD);
+				}
+
+				lizard.objMat = glm::rotate(lizard.objMat, 45.f, glm::vec3(0.0f, sin(10.f*currentTime), 0.0f));
+				cow.objMat = glm::rotate(cow.objMat, 45.f , glm::vec3(0.0f, sin(10.f*currentTime), 0.0f));
+
+				lizard.objMat = glm::translate(lizard.objMat, glm::vec3(0.f, 1.8f, 0.f));
+				cow.objMat = glm::translate(cow.objMat, glm::vec3(0.f, 1.8f, 0.f));
+			}
+
+			countX = countX + 1.8;
+		}
+	}
+	else if (selection == 1)
 	{
 		//MOVEMOS HACIA UN LADO
-		cow.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(countX, 0.0f, 10.f));
-		lizard.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(countX, 0.0f, 10.f));
+		cowInst.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(1.8, sin(10.f*currentTime), 10.f));
+		lizardInst.objMat = glm::translate(glm::mat4(1.0f), glm::vec3(1.8, cos(10.f*currentTime), 10.f));
 
-		//COLUMMAS
-		for (int j = 0; j < 100; j++)
-		{
-			if (j % 2 == 0 && i % 2 == 0)
-			{
-				MyLoadedModel::drawModel(currentTime, ObjType::COW);
-
-			}
-			else if (i % 2 != 0 && j % 2 == 0)
-			{
-				MyLoadedModel::drawModel(currentTime, ObjType::LIZARD);
-
-			}
-			else if(i % 2 != 0 && j % 2 != 0)
-			{
-				MyLoadedModel::drawModel(currentTime, ObjType::COW);
-			}
-			else
-			{
-				MyLoadedModel::drawModel(currentTime, ObjType::LIZARD);
-			}
-			lizard.objMat = glm::translate(lizard.objMat, glm::vec3(0.f, 1.5f, 0.f));
-			cow.objMat = glm::translate(cow.objMat, glm::vec3(0.f, 1.5f, 0.f));
-		}
-
-		countX = countX + 1.5;
+		MyLoadedModelInst::drawModelInst(currentTime, ObjType::COW);
+		MyLoadedModelInst::drawModelInst(currentTime, ObjType::LIZARD);
 	}
+	
 
 	ImGui::Render();
 }
@@ -1171,13 +1209,13 @@ void main() {\n\
 }
 
 ////////////////////////////////////////////////// MyModel
-/////////////////////////////////////////////////  CABINS
 namespace MyLoadedModel {
 	GLuint modelShaders[2];
 	GLuint modelProgram;
 
 	const char* model_vertShader =
 		"#version 330\n\
+	layout (location = 0) in uint drawid;\n\
 	in vec3 in_Position;\n\
 	in vec3 in_Normal;\n\
 	uniform vec3 lPos;\n\
@@ -1186,11 +1224,13 @@ namespace MyLoadedModel {
 	uniform mat4 objMat;\n\
 	uniform mat4 mv_Mat;\n\
 	uniform mat4 mvpMat;\n\
+	flat out uint drawID;\n\
 	void main() {\n\
+	vec2 offset;\n\
 	gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
-	//gl_Position = objMat * vec4(in_Position, 1.0);\n\
 	vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
 	lDir = normalize(lPos - gl_Position.xyz );\n\
+	drawID = drawid;\n\
 	}";
 
 
@@ -1202,6 +1242,7 @@ namespace MyLoadedModel {
 	out vec4 out_Color;\n\
 	uniform mat4 mv_Mat;\n\
 	uniform vec4 color;\n\
+	flat in uint drawID;\n\
 	void main() {\n\
 	out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(lDir.x, lDir.y, lDir.z, 0.0)) , 1.0 );\n\
 	}";
@@ -1223,7 +1264,22 @@ namespace MyLoadedModel {
 
 			glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
 			glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
 			glEnableVertexAttribArray(1);
+
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			modelShaders[0] = compileShader(model_vertShader, GL_VERTEX_SHADER, "cubeVert");
+			modelShaders[1] = compileShader(model_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
+
+			modelProgram = glCreateProgram();
+			glAttachShader(modelProgram, modelShaders[0]);
+			glAttachShader(modelProgram, modelShaders[1]);
+			glBindAttribLocation(modelProgram, 0, "in_Position");
+			glBindAttribLocation(modelProgram, 1, "in_Normal");
+			linkProgram(modelProgram);
 		}
 
 		if (TypeObj == ObjType::LIZARD)
@@ -1243,36 +1299,40 @@ namespace MyLoadedModel {
 			glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
 			glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 			glEnableVertexAttribArray(1);
+
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			modelShaders[0] = compileShader(model_vertShader, GL_VERTEX_SHADER, "cubeVert");
+			modelShaders[1] = compileShader(model_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
+
+			modelProgram = glCreateProgram();
+			glAttachShader(modelProgram, modelShaders[0]);
+			glAttachShader(modelProgram, modelShaders[1]);
+			glBindAttribLocation(modelProgram, 0, "in_Position");
+			glBindAttribLocation(modelProgram, 1, "in_Normal");
+			linkProgram(modelProgram);
 		}
-		
-		glBindVertexArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		modelShaders[0] = compileShader(model_vertShader, GL_VERTEX_SHADER, "cubeVert");
-		modelShaders[1] = compileShader(model_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
-
-		modelProgram = glCreateProgram();
-		glAttachShader(modelProgram, modelShaders[0]);
-		glAttachShader(modelProgram, modelShaders[1]);
-		glBindAttribLocation(modelProgram, 0, "in_Position");
-		glBindAttribLocation(modelProgram, 1, "in_Normal");
-		linkProgram(modelProgram);
 	}
 	void cleanupModel(ObjType TypeObj) {
 	
 		if (TypeObj == ObjType::COW) {
 			glDeleteBuffers(2, cow.modelVbo);
 			glDeleteVertexArrays(1, &cow.modelVao);
+			glDeleteProgram(modelProgram);
+			glDeleteShader(modelShaders[0]);
+			glDeleteShader(modelShaders[1]);
 		}
 		if (TypeObj == ObjType::LIZARD) {
 			glDeleteBuffers(2, lizard.modelVbo);
 			glDeleteVertexArrays(1, &lizard.modelVao);
+			glDeleteProgram(modelProgram);
+			glDeleteShader(modelShaders[0]);
+			glDeleteShader(modelShaders[1]);
 		}
 
-		glDeleteProgram(modelProgram);
-		glDeleteShader(modelShaders[0]);
-		glDeleteShader(modelShaders[1]);
+
 		
 	}
 	void updateModel(const glm::mat4& transform, ObjType TypeObj) {
@@ -1292,6 +1352,10 @@ namespace MyLoadedModel {
 				glUseProgram(modelProgram);
 				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(cow.objMat));
 				glUniform4f(glGetUniformLocation(modelProgram, "color"), 1.0f, 0.0f, 0.f, 0.f);
+
+				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+				glUniform3f(glGetUniformLocation(modelProgram, "lPos"), lightPos.x, lightPos.y, lightPos.z);
 		}
 
 		if (TypeObj == ObjType::LIZARD) {
@@ -1299,33 +1363,207 @@ namespace MyLoadedModel {
 				glUseProgram(modelProgram);
 				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(lizard.objMat));
 				glUniform4f(glGetUniformLocation(modelProgram, "color"), 1.0f, 1.0f, 1.f, 0.f);
+
+				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+				glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+				glUniform3f(glGetUniformLocation(modelProgram, "lPos"), lightPos.x, lightPos.y, lightPos.z);
 		}
 
-		glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
-		glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
-		glUniform3f(glGetUniformLocation(modelProgram, "lPos"), lightPos.x, lightPos.y, lightPos.z);
 
 
 		//EJERCICIO1
-		if (selection == 0)
+		glDrawArrays(GL_TRIANGLES, 0, 50000);
+
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+
+	}
+
+
+}
+namespace MyLoadedModelInst {
+	GLuint modelShaders[2];
+	GLuint modelProgram;
+
+	const char* model_vertShader =
+		"#version 330\n\
+	layout (location = 0) in uint drawid;\n\
+	in vec3 in_Position;\n\
+	in vec3 in_Normal;\n\
+	uniform vec3 lPos;\n\
+	out vec3 lDir;\n\
+	out vec4 vert_Normal;\n\
+	uniform mat4 objMat;\n\
+	uniform mat4 mv_Mat;\n\
+	uniform mat4 mvpMat;\n\
+	flat out uint drawID;\n\
+	uniform int selected;\n\
+	void main() {\n\
+	if(selected == 0)\n\
+	{\n\
+		gl_Position = mvpMat * objMat * vec4(in_Position + vec3(1.8, 0, 0) * (gl_InstanceID % 100)+ vec3(0, 1.8, 0) * (gl_InstanceID / 100), 1.0); \n\
+		vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0); \n\
+		lDir = normalize(lPos - gl_Position.xyz); \n\
+		drawID = drawid; \n\
+	}\n\
+	else\n\
+	{\n\
+		gl_Position = mvpMat * objMat * vec4(in_Position + vec3(1.8, 0, 0) * (gl_InstanceID % 100)+ vec3(0, 3.6, 0) * (gl_InstanceID / 100), 1.0); \n\
+		vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0); \n\
+		lDir = normalize(lPos - gl_Position.xyz); \n\
+		drawID = drawid; \n\
+	}\n\
+	}";
+
+
+
+	const char* model_fragShader =
+		"#version 330\n\
+	in vec4 vert_Normal;\n\
+	in vec3 lDir;\n\
+	out vec4 out_Color;\n\
+	uniform mat4 mv_Mat;\n\
+	uniform vec4 color;\n\
+	flat in uint drawID;\n\
+	void main() {\n\
+	vec2 positionInstance;\n\
+	out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(lDir.x, lDir.y, lDir.z, 0.0)) , 1.0 );\n\
+	}";
+
+	void setupModelInst(ObjType TypeObj) {
+
+		if (TypeObj == ObjType::COW) {
+			glGenVertexArrays(1, &cowInst.modelVao);
+			glBindVertexArray(cowInst.modelVao);
+			glGenBuffers(3, cowInst.modelVbo);
+
+			glBindBuffer(GL_ARRAY_BUFFER, cowInst.modelVbo[0]);
+
+			glBufferData(GL_ARRAY_BUFFER, vertices1.size() * sizeof(glm::vec3), &vertices1[0], GL_STATIC_DRAW);
+			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(0);
+
+			glBindBuffer(GL_ARRAY_BUFFER, cowInst.modelVbo[1]);
+
+			glBufferData(GL_ARRAY_BUFFER, normals1.size() * sizeof(glm::vec3), &normals1[0], GL_STATIC_DRAW);
+			glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+			glEnableVertexAttribArray(1);
+
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			modelShaders[0] = compileShader(model_vertShader, GL_VERTEX_SHADER, "cubeVert");
+			modelShaders[1] = compileShader(model_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
+
+			modelProgram = glCreateProgram();
+			glAttachShader(modelProgram, modelShaders[0]);
+			glAttachShader(modelProgram, modelShaders[1]);
+			glBindAttribLocation(modelProgram, 0, "in_Position");
+			glBindAttribLocation(modelProgram, 1, "in_Normal");
+			linkProgram(modelProgram);
+		}
+
+		if (TypeObj == ObjType::LIZARD)
 		{
-			glDrawArrays(GL_TRIANGLES, 0, 50000);
+			glGenVertexArrays(1, &lizardInst.modelVao);
+			glBindVertexArray(lizardInst.modelVao);
+			glGenBuffers(3, lizardInst.modelVbo);
+
+			glBindBuffer(GL_ARRAY_BUFFER, lizardInst.modelVbo[0]);
+
+			glBufferData(GL_ARRAY_BUFFER, vertices1.size() * sizeof(glm::vec3), &vertices1[0], GL_STATIC_DRAW);
+			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(0);
+
+			glBindBuffer(GL_ARRAY_BUFFER, lizardInst.modelVbo[1]);
+
+			glBufferData(GL_ARRAY_BUFFER, normals1.size() * sizeof(glm::vec3), &normals1[0], GL_STATIC_DRAW);
+			glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(1);
+
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			modelShaders[0] = compileShader(model_vertShader, GL_VERTEX_SHADER, "cubeVert");
+			modelShaders[1] = compileShader(model_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
+
+			modelProgram = glCreateProgram();
+			glAttachShader(modelProgram, modelShaders[0]);
+			glAttachShader(modelProgram, modelShaders[1]);
+			glBindAttribLocation(modelProgram, 0, "in_Position");
+			glBindAttribLocation(modelProgram, 1, "in_Normal");
+			linkProgram(modelProgram);
+		}
+	}
+	void cleanupModelInst(ObjType TypeObj) {
+
+		if (TypeObj == ObjType::COW) {
+			glDeleteBuffers(2, cowInst.modelVbo);
+			glDeleteVertexArrays(1, &cowInst.modelVao);
+			glDeleteProgram(modelProgram);
+			glDeleteShader(modelShaders[0]);
+			glDeleteShader(modelShaders[1]);
+		}
+		if (TypeObj == ObjType::LIZARD) {
+			glDeleteBuffers(2, lizardInst.modelVbo);
+			glDeleteVertexArrays(1, &lizardInst.modelVao);
+			glDeleteProgram(modelProgram);
+			glDeleteShader(modelShaders[0]);
+			glDeleteShader(modelShaders[1]);
 		}
 
 
-		//EJERCICIO2
-		if (selection == 1)
-		{
-			if (TypeObj == ObjType::LIZARD)
-			{
-				glDrawArraysInstanced(GL_TRIANGLES, vertices.size(), GL_UNSIGNED_INT, 0);
-			}
-			else
-			{
-				glDrawArraysInstanced(GL_TRIANGLES, vertices.size(), GL_UNSIGNED_INT, 0);
-			}
+
+	}
+	void updateModelInst(const glm::mat4& transform, ObjType TypeObj) {
+		if (TypeObj == ObjType::COW) {
+			cowInst.objMat = transform;
 		}
 
+		if (TypeObj == ObjType::LIZARD) {
+			lizardInst.objMat = transform;
+		}
+
+	}
+	void drawModelInst(double currentTime, ObjType TypeObj) {
+
+		if (TypeObj == ObjType::COW) {
+			glBindVertexArray(cowInst.modelVao);
+			glUseProgram(modelProgram);
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(cowInst.objMat));
+			glUniform4f(glGetUniformLocation(modelProgram, "color"), 1.0f, 0.0f, 0.f, 0.f);
+
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+			glUniform3f(glGetUniformLocation(modelProgram, "lPos"), lightPos.x, lightPos.y, lightPos.z);
+			glUniform1i(glGetUniformLocation(modelProgram, "selected"), 0);
+		}
+
+		if (TypeObj == ObjType::LIZARD) {
+			glBindVertexArray(lizardInst.modelVao);
+			glUseProgram(modelProgram);
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(lizardInst.objMat));
+			glUniform4f(glGetUniformLocation(modelProgram, "color"), 1.0f, 1.0f, 1.f, 0.f);
+
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+			glUniformMatrix4fv(glGetUniformLocation(modelProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+			glUniform3f(glGetUniformLocation(modelProgram, "lPos"), lightPos.x, lightPos.y, lightPos.z);
+			glUniform1i(glGetUniformLocation(modelProgram, "selected"), 1);
+		}
+
+
+		if (TypeObj == ObjType::LIZARD)
+		{
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 20000, 2500);
+		}
+		else if (TypeObj == ObjType::COW)
+		{
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 20000, 5000);
+		}
 
 		glUseProgram(0);
 		glBindVertexArray(0);
